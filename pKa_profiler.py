@@ -7,8 +7,6 @@ import sys
 from argparse import RawTextHelpFormatter
 from scipy.optimize import curve_fit
 
-__author__ = "Tomás Silva, Pedro Reis"
-
 """
 input files: 
  - insertion file: {insertion_dir(str)}/{pH_value(float)}_r{replicate(str)}_insertion.xvg
@@ -134,7 +132,7 @@ def defVariables(pH_values, replicates):
         trj[j] = {}
         for k in replicates:
             trj[j][k] = {'time':[], 'insertion':[], 'protonation':[], 'slices':[]}
-
+            
     return trj
 
 
@@ -244,8 +242,9 @@ def readInsertionFiles(trj, insertion_dir, criteria_dir):
             	    crit_max = crits[crit_i]['crit_max']
 
             	    if crit_value >= crit_min and crit_value <= crit_max:
-            	        trigger_continue = True
-
+                        trigger_continue = True
+                    else:
+                        trigger_continue = False
 
             if trigger_continue:
                 slices = assignToSlices(pH, replicate, time_i, insertion)
@@ -500,10 +499,10 @@ def criteria(x, y):
 
 
         if zero > cutoff and one > cutoff:
-            crit_value_zero = (zero / float(zero + one))
-            crit_value_one  = (one  / float(one + zero))
+            crit_value_zero = zero / float(zero + one)
+            crit_value_one  = one  / float(one + zero)
 
-            if crit_value_zero > tolerance and crit_value_one > tolerance:
+            if crit_value_zero > tolerance:
                 point_crit += 1
                 
             if crit_value_one - mono_variation < previous:
