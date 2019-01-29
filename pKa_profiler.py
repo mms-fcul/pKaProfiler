@@ -212,6 +212,9 @@ def readInsertionFiles(trj, insertion_dir, criteria_dir):
             time_i    = float(l_cols[0])
             insertion = float(l_cols[1])
 
+            if min_value < insertion and insertion < max_value:
+                trigger_continue = True
+                    
             if ncrits > 0:
                 try:
                     cline = next(cline_it)
@@ -231,9 +234,7 @@ def readInsertionFiles(trj, insertion_dir, criteria_dir):
             	    raise IOError('Inconsistent number of criteria ranges '
             	                  'and columns in the criteria input file')
 
-                if min_value < insertion and insertion < max_value:
-                    trigger_continue = True
-
+                
             	crit_values = c_cols[1:]
                 for crit_i in range(ncrits):
 
@@ -444,7 +445,7 @@ def fitSlices(slice_range, trj):
 
             init_vals = [n, pKa_guess]
 
-            if point_all > 1 and mono_all > 1: 
+            if point_all > 2 and mono_all > 2: 
                 popt, pcov = curve_fit(fitfunction, x, y, p0=init_vals, maxfev=5000)
                 n_fit      = popt[0]
                 pKa_fit    = popt[1]
