@@ -403,34 +403,6 @@ def fitSlices(slice_range, trj):
                 all_reps['ydata'].append(fprot)                
 
         if len(all_reps['ydata']) > 0 and len(all_reps['ydata']) == len(all_reps['xdata']):
-            for comb in all_buts:
-                x_but = all_buts[comb]['x_data']
-                y_but = all_buts[comb]['y_data']
-                pH_prots_buts = {}
-                if len(y_but) > 1 and len(y_but) == len(x_but):                       
-
-                    point_but = 0
-                    mono_but  = 0
-                    
-                    xdata, ydata, point_but, mono_but, pKa_guess = criteria(x_but,y_but)
-
-                    x=np.array(xdata)
-                    y=np.array(ydata)
-
-                    init_vals = [n, pKa_guess]
-
-                    if point_but > 1  and mono_but > 1: 
-
-                        popt, pcov = curve_fit(fitfunction, x, y, p0=init_vals)
-                        allbut_n_fit      = popt[0]
-                        allbut_pKa_fit    = popt[1]
-                        slice_range[tuples]['fit_' + str(comb)] = allbut_pKa_fit
-                        values_jk.append(allbut_pKa_fit)
-                        logfit.update({comb:allbut_pKa_fit})
-
-                    else:
-                        continue
-
 
             x_values = all_reps['xdata']
             y_values = all_reps['ydata']
@@ -445,11 +417,42 @@ def fitSlices(slice_range, trj):
 
             init_vals = [n, pKa_guess]
 
-            if point_all > 2 and mono_all > 2: 
+            if point_all > 2 and mono_all > 2:
+                
                 popt, pcov = curve_fit(fitfunction, x, y, p0=init_vals, maxfev=5000)
                 n_fit      = popt[0]
                 pKa_fit    = popt[1]
                 slice_range[tuples]['fit_all'] = pKa_fit
+
+                
+                print '->', pKa_fit
+                for comb in all_buts:
+                    x_but = all_buts[comb]['x_data']
+                    y_but = all_buts[comb]['y_data']
+                    pH_prots_buts = {}
+                    if len(y_but) > 1 and len(y_but) == len(x_but):                       
+                
+                        point_but = 0
+                        mono_but  = 0
+                        
+                        xdata, ydata, point_but, mono_but, pKa_guess = criteria(x_but,y_but)
+                
+                        x=np.array(xdata)
+                        y=np.array(ydata)
+                
+                        init_vals = [n, pKa_guess]
+                
+                        if point_but > 1  and mono_but > 1: 
+                
+                            popt, pcov = curve_fit(fitfunction, x, y, p0=init_vals)
+                            allbut_n_fit      = popt[0]
+                            allbut_pKa_fit    = popt[1]
+                            slice_range[tuples]['fit_' + str(comb)] = allbut_pKa_fit
+                            values_jk.append(allbut_pKa_fit)
+                            logfit.update({comb:allbut_pKa_fit})
+                
+                        else:
+                            continue
 
                 if len(values_jk) > 1:
                     pKa_err, stde_err = jackknife(values_jk)
@@ -459,8 +462,6 @@ def fitSlices(slice_range, trj):
                 mean_slab = ((tuples[0] + tuples[1])/2)
                 out_err.update({mean_slab:[pKa_fit, stde_err]})
                 fit_err.update({mean_slab:logfit})
-
-                print '->', pKa_fit
 
     return slice_range, out_err, fit_err
 
@@ -498,7 +499,6 @@ def criteria(x, y):
                 one  += 1
 
 
-
         if zero > cutoff and one > cutoff:
             crit_value_zero = zero / float(zero + one)
             crit_value_one  = one  / float(one + zero)
@@ -518,6 +518,7 @@ def criteria(x, y):
             for j in range(len(pH_prots[pH])):
                 xdata.append(pH)
                 ydata.append(avg_prot)
+
 
             if pH in guess_data.keys() and (math.sqrt(float(guess_data[pH][1])**2)) < prev:
                     prev     = math.sqrt(float(guess_data[pH][1])**2)
