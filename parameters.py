@@ -3,7 +3,7 @@
 # DIRECTORIES
 insertion_dir = '/user08/tsilva/PROJECTS/pHLIP/pHLIP-256/analysis/insertion/ASP14'
 prot_dir      = '/user08/tsilva/PROJECTS/pHLIP/pHLIP-256/analysis/profile/dats_res04'
-criteria_dir  = '/user08/tsilva/PROJECTS/pHLIP/pHLIP-256/analysis/profile/crit'
+criteria_dir  = ''
 
 # pH VALUES AND REPLICATES
 pH_values   = ['04.00','05.00','06.00','07.00'] # pH values need to be of str type, convertable to float type
@@ -20,19 +20,19 @@ bin_size  = 0.5
 fit = "Hill"
 mono_variation = 0.05
 tolerance      = 0.001
-cutoff         = 100 # the standard cutoff is 50 points
-
+cutoff         = 20 # the standard cutoff is 50 points
+cutoff_rep     = len(replicates)
 
 # EXCLUSION CRITERIA PARAMETERS
-crits_names = ['dssp', 'angle1','angle2']
-crits = [{'crit_min': 70,
-          'crit_max': 100},
-        {'crit_min': 45,
-         'crit_max': 90},
-         {'crit_min': 0,
-         'crit_max': 30}]
+#crits_names = ['dssp', 'angle1','angle2']
+#crits = [{'crit_min': 70,
+#          'crit_max': 100},
+#        {'crit_min': 45,
+#         'crit_max': 90},
+#         {'crit_min': 0,
+#         'crit_max': 30}]
 
-output_file = "profile_RE256_all_100"
+output_file = "profile_RE256_2pH_020"
 
 #1
 #real	1m58.704s

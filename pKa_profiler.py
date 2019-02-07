@@ -375,7 +375,7 @@ def fitSlices(slice_range, trj):
     fit_err   = {}
     logfit    = {}
     for tuples in sorted(slice_range.keys()):
-        all_reps  = {'xdata':[],'ydata':[]}
+        all_reps  = {'xdata':[],'ydata':[],'reps':[]}
         if len(slice_range[tuples]['points']) < 1:
             continue
 
@@ -383,8 +383,10 @@ def fitSlices(slice_range, trj):
         values_jk = []
         pH_cutoff = 0
         for rep in replicates:
-            all_buts["all_but"+str(rep)] = {'x_data':[],'y_data':[]}
+            all_buts["all_but"+str(rep)] = {'x_data':[],'y_data':[], 'reps':[]}
+            
 
+        
         for i in slice_range[tuples]['points']:
             fpH   = i[0]
             frep  = i[1]
@@ -394,30 +396,36 @@ def fitSlices(slice_range, trj):
                 findex = trj[fpH][frep]['time'].index(ftime)
                 fprot  = trj[fpH][frep]['protonation'][findex]
                 pHf    = float(fpH)
-
+                               
                 for rep in replicates:
                     if rep != frep:
                         all_buts["all_but"+str(rep)]['x_data'].append(pHf)
-                        all_buts["all_but"+str(rep)]['y_data'].append(fprot)                    
+                        all_buts["all_but"+str(rep)]['y_data'].append(fprot)
+                        all_buts["all_but"+str(rep)]['reps'].append(rep)                    
                 all_reps['xdata'].append(pHf)
                 all_reps['ydata'].append(fprot)                
+                all_reps['reps'].append(frep)
 
         if len(all_reps['ydata']) > 0 and len(all_reps['ydata']) == len(all_reps['xdata']):
 
             x_values = all_reps['xdata']
             y_values = all_reps['ydata']
+            reps     = all_reps['reps']
+            print tuples
+            count_pH = check_reps(x_values,y_values, reps)
+            
+            if count_pH > 1:
+                point_all = 0
+                mono_all  = 0
 
-            point_all = 0
-            mono_all  = 0
+                xdata, ydata, point_all, mono_all, pKa_guess = criteria(x_values,y_values)
 
-            xdata, ydata, point_all, mono_all, pKa_guess = criteria(x_values,y_values)
+                x=np.array(xdata)
+                y=np.array(ydata)
+                
+                init_vals = [n, pKa_guess]
 
-            x=np.array(xdata)
-            y=np.array(ydata)
-
-            init_vals = [n, pKa_guess]
-
-            if point_all > 2 and mono_all > 2:
+                #if point_all > 1 and mono_all > 1:
                 
                 popt, pcov = curve_fit(fitfunction, x, y, p0=init_vals, maxfev=5000)
                 n_fit      = popt[0]
@@ -427,8 +435,9 @@ def fitSlices(slice_range, trj):
                 
                 print '->', pKa_fit
                 for comb in all_buts:
-                    x_but = all_buts[comb]['x_data']
-                    y_but = all_buts[comb]['y_data']
+                    x_but    = all_buts[comb]['x_data']
+                    y_but    = all_buts[comb]['y_data']
+                    reps_but = all_buts[comb]['reps']
                     pH_prots_buts = {}
                     if len(y_but) > 1 and len(y_but) == len(x_but):                       
                 
@@ -436,7 +445,7 @@ def fitSlices(slice_range, trj):
                         mono_but  = 0
                         
                         xdata, ydata, point_but, mono_but, pKa_guess = criteria(x_but,y_but)
-                
+                        
                         x=np.array(xdata)
                         y=np.array(ydata)
                 
@@ -454,11 +463,11 @@ def fitSlices(slice_range, trj):
                         else:
                             continue
 
-                if len(values_jk) > 1:
-                    pKa_err, stde_err = jackknife(values_jk)
-                else:
-                    stde_err = "NaN"
-                    log_fit  = "NaN"
+                    if len(values_jk) > 1:
+                        pKa_err, stde_err = jackknife(values_jk)
+                    else:
+                        stde_err = "NaN"
+                        log_fit  = "NaN"
                 mean_slab = ((tuples[0] + tuples[1])/2)
                 out_err.update({mean_slab:[pKa_fit, stde_err]})
                 fit_err.update({mean_slab:logfit})
@@ -467,6 +476,45 @@ def fitSlices(slice_range, trj):
 
 
 #### Tolerance and Monotonicity Criteria ####
+def check_reps(x,y,reps):
+    pH_prots   = {}    
+    count_pH   = 0
+    for pH in pH_values:
+        pH_prots[float(pH)] = {}
+        for rep in replicates:
+            pH_prots[float(pH)][rep] = []
+
+    
+    for i in range(len(x)):
+        pHf = float(x[i])
+        if pHf in pH_prots.keys():
+            pH_prots[pHf][reps[i]].append(y[i])
+          
+    for pH in pH_values:
+        count_rep = 0
+        for rep in replicates:
+            zero  = 0
+            one   = 0
+            pHf=float(pH)
+            if pHf in pH_prots.keys():
+                for i in range(len(pH_prots[pHf][rep])):
+                    if pH_prots[pHf][rep][i] == 0:
+                        zero += 1
+                    elif pH_prots[pHf][rep][i] == 1:
+                        one  += 1
+                        
+
+            if zero > cutoff and one > cutoff:
+                count_rep +=1
+
+        print pH, 'number of reps with at least 20 prot and deprot',count_rep
+        if count_rep >= cutoff_rep:
+            count_pH +=1
+    
+    print 'number of pH with 5 reps', count_pH
+    return count_pH
+
+
 def criteria(x, y):
     guess_data = {}
     pH_prots   = {}
@@ -483,6 +531,7 @@ def criteria(x, y):
     for i in range(len(x)):
         pH = float(x[i])
         if pH in pH_prots.keys():
+           
             pH_prots[pH].append(y[i])
                               
     previous   = 1
@@ -533,7 +582,7 @@ def criteria(x, y):
         else:
             pKa_guess = 6.0
     return  xdata, ydata, point_crit, mono_crit, pKa_guess
-
+                
 
 def writeOutput(trj, slice_range, out_err, fit_err, output_file, log_file):
     """Write output file in the desired format:
